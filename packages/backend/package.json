@@ -1,0 +1,39 @@
+{
+  "name": "@dast/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n api,worker -c blue,magenta \"tsx watch src/interface/http/main.ts\" \"tsx watch src/interface/worker/main.ts\"",
+    "start:api": "tsx src/interface/http/main.ts",
+    "start:worker": "tsx src/interface/worker/main.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.1",
+    "@dast/shared": "workspace:*",
+    "@fastify/cors": "^10.0.2",
+    "@fastify/sensible": "^6.0.3",
+    "@prisma/client": "^6.2.1",
+    "bullmq": "^5.34.6",
+    "fastify": "^5.2.1",
+    "ioredis": "^5.4.2",
+    "openapi-types": "^12.1.3",
+    "pino": "^9.6.0",
+    "tsx": "^4.19.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "concurrently": "^9.1.2",
+    "pino-pretty": "^13.0.0",
+    "prisma": "^6.2.1",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

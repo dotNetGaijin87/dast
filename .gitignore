@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.env
+.env.local
+.DS_Store
+.turbo/
+.pnpm-store/
+packages/backend/prisma/*.db
+packages/frontend/.vite/
+# Local, environment-specific TLS-inspection CA for container builds (not for VCS).
+certs/

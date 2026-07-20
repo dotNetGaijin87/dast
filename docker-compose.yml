@@ -1,0 +1,102 @@
+name: dast
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dast}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dast}
+      POSTGRES_DB: ${POSTGRES_DB:-dast}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-dast}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - '6379:6379'
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    command: sh -c "pnpm --filter @dast/backend exec prisma migrate deploy && pnpm --filter @dast/backend start:api"
+    environment:
+      NODE_ENV: production
+      API_PORT: '4000'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dast}:${POSTGRES_PASSWORD:-dast}@postgres:5432/${POSTGRES_DB:-dast}?schema=public
+      REDIS_URL: redis://redis:6379
+      ZAP_BASE_URL: http://zap:8080
+      ZAP_API_KEY: ${ZAP_API_KEY:-change-me}
+      SAFE_MODE: 'true'
+      CORS_ORIGIN: '*'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '4000:4000'
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    command: sh -c "pnpm --filter @dast/backend start:worker"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dast}:${POSTGRES_PASSWORD:-dast}@postgres:5432/${POSTGRES_DB:-dast}?schema=public
+      REDIS_URL: redis://redis:6379
+      ZAP_BASE_URL: http://zap:8080
+      ZAP_API_KEY: ${ZAP_API_KEY:-change-me}
+      ZAP_TIMEOUT_MS: '300000'
+      SAFE_MODE: 'true'
+      SCAN_MAX_CONCURRENCY: '2'
+      SCAN_REQUESTS_PER_SECOND: '10'
+      SCAN_MAX_ENDPOINTS: '50'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:4000}
+    ports:
+      - '5173:80'
+    depends_on:
+      - api
+
+  # OWASP ZAP daemon — used by the ZAP engine adapter (a later phase).
+  # Behind a profile so the default `docker compose up` stays lightweight.
+  # Start with: docker compose --profile zap up
+  zap:
+    image: zaproxy/zap-stable
+    profiles: ['zap']
+    command: >
+      zap.sh -daemon -host 0.0.0.0 -port 8080
+      -config api.key=${ZAP_API_KEY:-change-me}
+      -config api.addrs.addr.name=.*
+      -config api.addrs.addr.regex=true
+    ports:
+      - '8090:8080'
+
+volumes:
+  pgdata:

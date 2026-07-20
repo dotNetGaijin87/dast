@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Target {
+  id         String        @id @default(uuid())
+  name       String
+  baseUrl    String
+  // Authorization allow-list: scans refuse hosts not listed here.
+  scopeHosts String[]
+  // Test identities [{ name, headers }] used by active authz checks.
+  authProfiles Json        @default("[]")
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  scans      Scan[]
+  endpoints  ApiEndpoint[]
+}
+
+model ApiEndpoint {
+  id          String   @id @default(uuid())
+  target      Target   @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  targetId    String
+  method      String
+  path        String
+  operationId String?
+  summary     String?
+  secured     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([targetId, method, path])
+}
+
+model Scan {
+  id         String    @id @default(uuid())
+  target     Target    @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  targetId   String
+  status     String    @default("queued") // queued | running | completed | failed
+  profile    String    @default("baseline")
+  progress   Int       @default(0)
+  safeMode   Boolean   @default(true)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  error      String?
+  createdAt  DateTime  @default(now())
+  findings   Finding[]
+}
+
+model Finding {
+  id            String   @id @default(uuid())
+  scan          Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  scanId        String
+  title         String
+  description   String
+  severity      String // info | low | medium | high | critical
+  owaspCategory String // e.g. "API8:2023"
+  engine        String // native | zap
+  method        String?
+  path          String?
+  evidence      Json?
+  remediation   String?
+  status        String   @default("open") // open | confirmed | false_positive
+  createdAt     DateTime @default(now())
+
+  @@index([scanId])
+  @@index([severity])
+}

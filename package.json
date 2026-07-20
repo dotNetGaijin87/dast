@@ -1,0 +1,25 @@
+{
+  "name": "dast-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI-driven DAST platform (native TS + OWASP ZAP hybrid engine)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm --filter @dast/shared build && pnpm -r --filter=!@dast/shared build",
+    "dev": "pnpm --filter @dast/shared build && pnpm -r --parallel dev",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @dast/backend db:generate",
+    "db:migrate": "pnpm --filter @dast/backend db:migrate",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
