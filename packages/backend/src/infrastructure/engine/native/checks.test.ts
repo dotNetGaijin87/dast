@@ -90,6 +90,14 @@ describe('checkCookieFlags', () => {
     const r = makeResult({ setCookies: ['sid=abc; Secure; HttpOnly; SameSite=Lax'] });
     expect(checkCookieFlags(r)).toHaveLength(0);
   });
+  it('does not count attribute names appearing in the cookie name or value', () => {
+    const r = makeResult({ setCookies: ['secure_sid=httponly-samesite; Path=/'] });
+    const [finding] = checkCookieFlags(r);
+    expect(finding?.evidence).toMatchObject({
+      cookie: 'secure_sid',
+      missing: ['Secure', 'HttpOnly', 'SameSite'],
+    });
+  });
 });
 
 describe('checkInsecureTransport', () => {
