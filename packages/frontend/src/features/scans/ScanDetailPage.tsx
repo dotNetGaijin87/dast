@@ -13,7 +13,7 @@ import { ExportButtons } from '../reports/ExportButtons';
 
 export function ScanDetailPage() {
   const { id = '' } = useParams();
-  const { data: scan, isLoading } = useScan(id, /* poll */ true);
+  const { data: scan, isLoading } = useScan(id);
   const targetQuery = useTarget(scan?.targetId ?? '');
 
   const status = scan?.status ?? null;

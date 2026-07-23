@@ -15,11 +15,15 @@ export function useScans(targetId: string) {
   });
 }
 
-export function useScan(id: string, poll: boolean) {
+/** Poll every 2s only while the scan is still active; stop once it settles. */
+export function useScan(id: string) {
   return useQuery({
     queryKey: scanKeys.detail(id),
     queryFn: () => scansApi.get(id),
-    refetchInterval: poll ? 2_000 : false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === 'queued' || status === 'running' ? 2_000 : false;
+    },
   });
 }
 
